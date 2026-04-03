@@ -1,15 +1,16 @@
 "use client";
+import { Suspense } from 'react';
 import { categoriesList } from '../data/products';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useLang } from './LangContext';
 
-export default function RightSidebar() {
+function RightSidebarContent() {
   const [price, setPrice] = useState(1000);
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { t, lang, tCat } = useLang(); // استدعاء tCat
+  const { t, lang, tCat } = useLang();
 
   const currentSlug = params?.slug as string;
   const catsQuery = searchParams.get('cats');
@@ -52,7 +53,7 @@ export default function RightSidebar() {
             <label key={category.slug} className="flex items-center gap-3 cursor-pointer group">
               <input type="checkbox" checked={selectedCategories.includes(category.slug)} onChange={() => handleCategoryChange(category.slug)} className="w-4 h-4 text-blue-600 rounded border-gray-300 cursor-pointer focus:ring-blue-500" />
               <span className={`text-sm transition-colors ${selectedCategories.includes(category.slug) ? "text-blue-600 font-bold" : "text-gray-600 group-hover:text-blue-600"}`}>
-                {tCat(category.name)} {/* الترجمة هنا */}
+                {tCat(category.name)}
               </span>
             </label>
           ))}
@@ -75,5 +76,13 @@ export default function RightSidebar() {
         </div>
       </div>
     </aside>
+  );
+}
+
+export default function RightSidebar() {
+  return (
+    <Suspense fallback={<aside className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-pulse"><div className="h-4 bg-gray-200 rounded w-1/2 mb-6"></div><div className="h-32 bg-gray-200 rounded mb-6"></div></aside>}>
+      <RightSidebarContent />
+    </Suspense>
   );
 }

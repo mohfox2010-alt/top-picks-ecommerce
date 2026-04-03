@@ -1,14 +1,15 @@
 "use client";
+import { Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { categoriesList } from '../data/products';
 import { useLang } from './LangContext'; 
 
-export default function PageHeader() {
+function PageHeaderContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { t, tCat } = useLang(); // استدعاء tCat
+  const { t, tCat } = useLang();
 
   const viewParam = searchParams.get('view');
   const catsQuery = searchParams.get('cats');
@@ -35,10 +36,18 @@ export default function PageHeader() {
 
         {categoriesList.map((category) => (
           <Link key={category.slug} href={`/category/${category.slug}`} className={`px-5 py-2 rounded-full font-semibold transition-all duration-300 shadow-sm text-sm md:text-base ${currentSlug === category.slug ? "bg-blue-600 text-white hover:bg-blue-700 scale-105" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 hover:text-blue-600"}`}>
-            {tCat(category.name)} {/* الترجمة هنا */}
+            {tCat(category.name)}
           </Link>
         ))}
       </div>
     </div>
+  );
+}
+
+export default function PageHeader() {
+  return (
+    <Suspense fallback={<div className="h-[70px] sm:h-[170px] md:h-[270px] w-full bg-gray-100 animate-pulse mb-8"></div>}>
+      <PageHeaderContent />
+    </Suspense>
   );
 }

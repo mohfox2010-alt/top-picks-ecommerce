@@ -6,14 +6,14 @@ import { affiliateProducts, categoriesList } from './data/products';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
-import { useLang } from './components/LangContext'; // استدعاء الترجمة هنا
+import { useLang } from './components/LangContext';
 
 function HomeContent() {
   const searchParams = useSearchParams();
   const viewParam = searchParams.get('view');
   const catsQuery = searchParams.get('cats');
   const searchQuery = searchParams.get('q') || ''; 
-  const { t, tCat } = useLang(); // سحبنا القاموس والمترجم الذكي
+  const { t, tCat } = useLang();
 
   const selectedCatsArray = catsQuery ? catsQuery.split(',') : [];
 
@@ -47,7 +47,7 @@ function HomeContent() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-90 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <div className="absolute bottom-0 left-0 w-full p-6 text-white transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
                   <h2 className="text-2xl font-extrabold mb-1 drop-shadow-lg">
-                    {tCat(category.name)} {/* الترجمة هنا */}
+                    {tCat(category.name)}
                   </h2>
                 </div>
               </div>
