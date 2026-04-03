@@ -1,5 +1,5 @@
-import { affiliateProducts, categoriesList } from '@/app/data/products';
-import ProductCard from '@/app/components/ProductCard';
+import { affiliateProducts, categoriesList } from '../../data/products';
+import ProductCard from '../../components/ProductCard';
 import { notFound } from 'next/navigation';
 
 type CategoryPageProps = {
