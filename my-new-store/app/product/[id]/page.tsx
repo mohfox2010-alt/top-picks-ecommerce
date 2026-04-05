@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { affiliateProducts } from '../../data/products';
 import { useParams } from 'next/navigation';
+export const runtime = 'edge';
 
 export default function ProductDetailsPage() {
   const params = useParams();

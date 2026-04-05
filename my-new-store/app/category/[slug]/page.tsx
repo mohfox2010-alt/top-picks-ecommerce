@@ -1,6 +1,7 @@
 import { affiliateProducts, categoriesList } from '../../data/products';
 import ProductCard from '../../components/ProductCard';
 import { notFound } from 'next/navigation';
+export const runtime = 'edge';
 
 type CategoryPageProps = {
   params: Promise<{ slug: string }>;
