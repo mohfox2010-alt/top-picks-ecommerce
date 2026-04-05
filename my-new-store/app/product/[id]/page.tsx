@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { affiliateProducts } from '@/app/data/products';
+import { affiliateProducts } from '../../data/products';
 import { useParams } from 'next/navigation';
 
 export default function ProductDetailsPage() {
