@@ -12,6 +12,7 @@ import TopPicksSection from './components/TopPicksSection';
 import { usePathname } from 'next/navigation';
 import { Suspense } from 'react';
 import { LangProvider } from './components/LangContext'; // استدعاء القاموس
+export const runtime = 'edge';
 
 const inter = Inter({ subsets: ['latin'] });
 
