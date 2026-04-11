@@ -1,36 +1,61 @@
-"use client"; // 1. أضفنا هذا السطر لأننا نستخدم hook
+"use client";
 
-import { affiliateProducts } from '../data/products';
-import ProductCard from './ProductCard';
-import { useLang } from './LangContext'; // 2. استدعاء الترجمة
+import { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase'; // الاتصال بقاعدة البيانات
+import ProductCard from './ProductCard'; // استدعاء كارت المنتج
+import { useLang } from './LangContext'; 
 
 export default function BestSellers() {
-  const { t } = useLang(); // 3. استخدام القاموس
+  const { t, lang } = useLang();
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // هناخد أول 4 منتجات نعرضهم كأكثر مبيعاً
-  const topProducts = affiliateProducts.slice(0, 4);
+  // سحب منتجات من قاعدة البيانات لعرضها في قسم "الأكثر مبيعاً"
+  useEffect(() => {
+    async function fetchBestSellers() {
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          // هنجيب 4 منتجات كمثال للأكثر مبيعاً
+          .limit(4); 
+
+        if (error) throw error;
+        setProducts(data || []);
+      } catch (err) {
+        console.error("مشكلة في جلب المنتجات الأكثر مبيعاً:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchBestSellers();
+  }, []);
+
+  // إخفاء القسم لو لسة بيحمل أو لو مفيش منتجات
+  if (loading || products.length === 0) return null;
 
   return (
-    // التعديل: مسحنا mt-16 وخلينا الخط الفاصل أقرب شوية
-    <div className="w-full border-t border-gray-200 pt-8">
-      <div className="flex items-center gap-2 mb-8">
-        <span className="text-3xl">🔥</span>
-        {/* 4. تبديل النص الثابت بالنص المترجم من القاموس */}
-        <h2 className="text-3xl font-extrabold text-gray-900">{t.bestSellers}</h2>
+    <section className="py-12">
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="text-2xl md:text-3xl font-black text-gray-900">
+          {lang === 'ar' ? 'الأكثر مبيعاً 🔥' : 'Best Sellers 🔥'}
+        </h2>
       </div>
-      
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {topProducts.map((product) => (
+
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+        {products.map((product) => (
           <ProductCard 
-            key={product.id}
-            id={product.id}
-            title={product.title}
-            description={product.description}
-            price={product.price}
-            imageUrl={product.imageUrl}
+            key={product.id} 
+            id={product.id} 
+            title={product.name}          
+            description={product.details} 
+            // دمجنا السعر مع العملة اللي ضفناها في لوحة التحكم
+            price={`${product.price} ${product.currency || 'ر.س'}`} 
+            imageUrl={product.image_url}  
           />
         ))}
       </div>
-    </div>
+    </section>
   );
 }

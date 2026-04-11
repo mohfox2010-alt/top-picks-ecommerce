@@ -1,120 +1,159 @@
 "use client";
-
-import { useState } from 'react';
+import { supabase } from '../../../lib/supabase'; // مسار البوابة بتاعتنا
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { affiliateProducts } from '../../data/products';
 import { useParams } from 'next/navigation';
-export const runtime = 'edge';
 
 export default function ProductDetailsPage() {
   const params = useParams();
   const productId = Number(params.id);
-  
-  // البحث عن المنتج في قاعدة البيانات المحلية
-  const product = affiliateProducts.find((p) => p.id === productId);
 
-  // --------------------------------------------------------
-  // إعدادات المتغيرات (States) للتحكم في الصفحة
-  // --------------------------------------------------------
-  // 1 & 2. حالة الصورة النشطة (لتغييرها عند لمس الصور المصغرة)
-  const [activeMedia, setActiveMedia] = useState(product?.imageUrl || '/banar.jpg');
-  
-  // 4. حالة اللون المختار
+  // --- 1. حالات (States) جلب البيانات من قاعدة البيانات ---
+  const [product, setProduct] = useState<any>(null); // هنخزن فيه بيانات المنتج
+  const [loading, setLoading] = useState(true); // حالة التحميل
+  const [error, setError] = useState<string | null>(null); // لو حصل خطأ
+
+  // --- 2. حالات (States) التحكم في واجهة المستخدم ---
+  const [activeMedia, setActiveMedia] = useState('/banar.jpg'); // الصورة الكبيرة
   const [selectedColor, setSelectedColor] = useState('برتقالي كوزميك');
-  
-  // 5. حالة الحجم المختار
   const [selectedSize, setSelectedSize] = useState('256 GB');
-  
-  // 6. حالة إظهار المزيد/الأقل في المواصفات
   const [showMoreSpecs, setShowMoreSpecs] = useState(false);
 
-  // إذا لم يتم العثور على المنتج
-  if (!product) {
+  // --- 3. سحب بيانات المنتج بناءً على الـ ID ---
+  useEffect(() => {
+    async function fetchProductDetails() {
+      try {
+        setLoading(true);
+        // بنطلب من Supabase منتج واحد بس الـ id بتاعه بيساوي الـ productId اللي في الرابط
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .eq('id', productId)
+          .single(); // single() عشان نضمن إنه يرجع عنصر واحد مش مصفوفة
+
+        if (error) throw error;
+
+        if (data) {
+          setProduct(data);
+          // أول ما البيانات تيجي، بنخلي الصورة الرئيسية هي صورة المنتج
+          setActiveMedia(data.image_url || '/banar.jpg'); 
+        } else {
+          setError("عذراً، هذا المنتج غير متوفر.");
+        }
+
+      } catch (err) {
+        console.error("مشكلة في جلب تفاصيل المنتج:", err);
+        setError("حدث خطأ أثناء تحميل بيانات المنتج.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (productId) {
+      fetchProductDetails();
+    }
+  }, [productId]);
+
+  // --- 4. واجهة التحميل ---
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <h1 className="text-2xl font-bold text-gray-500">عذراً، المنتج غير موجود!</h1>
+        <h1 className="text-2xl font-bold text-gray-500 animate-pulse">جاري تحميل تفاصيل المنتج...</h1>
       </div>
     );
   }
 
-  // مصفوفة صور وهمية لتشغيل معرض الصور (في مشروعك الحقيقي ستجلبها من قاعدة البيانات)
+  // --- 5. واجهة الخطأ أو عدم وجود المنتج ---
+  if (error || !product) {
+    return (
+      <div className="flex items-center justify-center h-96 flex-col gap-4">
+        <h1 className="text-2xl font-bold text-red-500">{error}</h1>
+        <Link href="/" className="text-blue-600 underline font-bold">العودة للرئيسية</Link>
+      </div>
+    );
+  }
+
+  // --- تجهيز البيانات للعرض ---
+  // مصفوفة صور (بندمج صورة المنتج مع صور تجريبية لمعرض الصور)
   const gallery = [
-    product.imageUrl,
+    product.image_url, 
     '/banar.jpg',
-    product.imageUrl,
-    '/banar.jpg'
+    product.image_url,
   ];
 
-  // مواصفات وهمية للتجربة
+  // مواصفات المنتج (دمجنا فيها البيانات الحقيقية من الداتابيز)
   const specifications = [
-    { label: "العلامة التجارية", value: "ابل (Apple)" },
-    { label: "أنظمة التشغيل", value: "iOS 17" },
-    { label: "سعة تخزين الذاكرة", value: "256 جيجابايت" },
-    { label: "حجم الشاشة", value: "6.7 انش" },
-    { label: "الدقة", value: "1290 × 2796" },
-    { label: "اسم الطراز", value: "ايفون 17 برو ماكس" },
-    { label: "التكنولوجيا الخلوية", value: "5G" },
+    { label: "اسم المنتج", value: product.name },
+    { label: "القسم", value: product.category },
+    { label: "التفاصيل", value: product.details || "لا توجد تفاصيل إضافية" },
+    { label: "العلامة التجارية", value: "ابل (Apple)" }, // دي ثابتة للتجربة
+    { label: "الضمان", value: "سنتين" },
   ];
 
-  const displayedSpecs = showMoreSpecs ? specifications : specifications.slice(0, 4);
+  const displayedSpecs = showMoreSpecs ? specifications : specifications.slice(0, 3);
 
   return (
     <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6 md:p-8 max-w-6xl mx-auto my-4">
       <div className="flex flex-col lg:flex-row gap-10">
         
         {/* ========================================= */}
-        {/* الجانب الأيمن: معرض الصور (الرقم 1 و 2) */}
+        {/* الجانب الأيمن: معرض الصور */}
         {/* ========================================= */}
         <div className="w-full lg:w-1/2 flex gap-4">
-          {/* 1. الصور المصغرة عمودياً */}
           <div className="flex flex-col gap-3 overflow-y-auto max-h-[500px] w-20 scrollbar-hide py-1">
             {gallery.map((img, index) => (
               <div 
                 key={index} 
-                onMouseEnter={() => setActiveMedia(img)} // التغيير بمجرد الإشارة بالماوس
+                onMouseEnter={() => setActiveMedia(img)} 
                 className={`relative w-16 h-16 rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${activeMedia === img ? 'border-blue-600 scale-105' : 'border-gray-200 hover:border-gray-400'}`}
               >
-                <Image src={img} alt="صورة مصغرة" fill className="object-cover" />
+                {/* ضفنا شرط للتأكد من وجود الصورة عشان متعملش إيرور */}
+                {img && <Image src={img} alt="صورة مصغرة" fill className="object-cover" />}
               </div>
             ))}
           </div>
 
-          {/* 2. الصورة الرئيسية الكبيرة */}
-          <div className="relative flex-1 h-[400px] md:h-[500px] bg-gray-50 rounded-3xl overflow-hidden border border-gray-100">
-            <Image 
-              src={activeMedia} 
-              alt={product.title} 
-              fill 
-              className="object-contain p-4 transition-transform duration-500 hover:scale-110" 
-              priority
-            />
+          <div className="relative flex-1 h-[400px] md:h-[500px] bg-gray-50 rounded-3xl overflow-hidden border border-gray-100 flex items-center justify-center">
+            {activeMedia ? (
+              <Image 
+                src={activeMedia} 
+                alt={product.name} 
+                fill 
+                className="object-contain p-4 transition-transform duration-500 hover:scale-110" 
+                priority
+              />
+            ) : (
+              <span className="text-gray-400">لا توجد صورة</span>
+            )}
           </div>
         </div>
 
         {/* ========================================= */}
-        {/* الجانب الأيسر: تفاصيل المنتج (الأرقام 3 إلى 8) */}
+        {/* الجانب الأيسر: تفاصيل المنتج */}
         {/* ========================================= */}
         <div className="w-full lg:w-1/2 flex flex-col">
           
-          {/* 3. اسم المنتج والتقييم */}
           <div className="mb-6 border-b border-gray-100 pb-6">
-            <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-3">{product.title}</h1>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-3">{product.name}</h1>
             <div className="flex items-center gap-4">
               <div className="flex text-yellow-400 text-sm">
                 ★★★★<span className="text-gray-300">★</span>
               </div>
               <span className="text-sm text-blue-600 font-bold hover:underline cursor-pointer">(413 تقييم)</span>
             </div>
+            {/* عرض وصف المنتج اللي جاي من الداتابيز */}
+            <p className="mt-4 text-gray-600 leading-relaxed">
+              {product.details}
+            </p>
           </div>
 
-          {/* 4. الألوان المتاحة */}
           <div className="mb-6 border-b border-gray-100 pb-6">
             <span className="block text-sm font-bold text-gray-900 mb-3">اللون: <span className="text-gray-500 font-normal">{selectedColor}</span></span>
             <div className="flex flex-wrap gap-3">
               {[
-                { name: 'برتقالي كوزميك', hex: '#E87D3E' },
-                { name: 'أسود تيتانيوم', hex: '#2A2A2C' },
+                { name: 'افتراضي', hex: '#E87D3E' },
+                { name: 'أسود', hex: '#2A2A2C' },
                 { name: 'أبيض', hex: '#F4F4F4' }
               ].map((color) => (
                 <button 
@@ -128,25 +167,8 @@ export default function ProductDetailsPage() {
             </div>
           </div>
 
-          {/* 5. حجم المنتج / السعة */}
-          <div className="mb-6 border-b border-gray-100 pb-6">
-            <span className="block text-sm font-bold text-gray-900 mb-3">الحجم: <span className="text-gray-500 font-normal">{selectedSize}</span></span>
-            <div className="flex flex-wrap gap-3">
-              {['256 GB', '512 GB', '1 TB'].map((size) => (
-                <button 
-                  key={size}
-                  onClick={() => setSelectedSize(size)}
-                  className={`px-6 py-2 rounded-xl font-bold border-2 transition-all ${selectedSize === size ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}
-                >
-                  {size}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 6. مواصفات المنتج (عرض المزيد / عرض أقل) */}
           <div className="mb-8">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">المواصفات</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-4">المواصفات الأساسية</h3>
             <ul className="flex flex-col gap-2 text-sm">
               {displayedSpecs.map((spec, index) => (
                 <li key={index} className="flex items-center">
@@ -163,19 +185,15 @@ export default function ProductDetailsPage() {
             </button>
           </div>
 
-          {/* المسافة المرنة لدفع الأزرار للأسفل */}
           <div className="flex-grow"></div>
 
-          {/* 7 & 8. السعر وزر الشراء */}
           <div className="flex items-center gap-4 mt-6 pt-6 border-t border-gray-100">
-            {/* 7. السعر (تصميم زر أزرق) */}
             <div className="w-1/3 border-2 border-blue-600 bg-blue-50 text-blue-600 rounded-2xl py-4 flex flex-col items-center justify-center font-black text-xl shadow-sm">
-              {product.price}
+              {product.price} ر.س
             </div>
             
-            {/* 8. زر الشراء */}
             <Link 
-              href={product.affiliateLink} 
+              href={product.affiliate_link || "#"} // ربطنا لينك أمازون من الداتابيز
               target="_blank"
               className="w-2/3 bg-blue-600 text-white rounded-2xl py-4 flex items-center justify-center font-black text-xl shadow-md hover:bg-blue-700 hover:shadow-lg transition-all transform hover:-translate-y-1"
             >
